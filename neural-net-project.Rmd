@@ -1,0 +1,107 @@
+---
+title: "neural nets"
+author: "Umran YAMAN"
+date: "2023-07-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Neural Net Project
+Let's wrap up this course by taking a a quick look at the effectiveness of Neural Nets!
+We'll use the Bank Authentication Data Set from the UCI repository.
+The data consists of 5 columns:
+variance of Wavelet Transformed image (continuous)
+skewness of Wavelet Transformed image (continuous)
+curtosis of Wavelet Transformed image (continuous)
+entropy of image (continuous)
+class (integer)
+Where class indicates whether or not a Bank Note was authentic.
+
+Get the Data
+Use read.csv to read the bank_note_data.csv file.
+
+```{r}
+setwd("~/Documents/Data_ML_projects/Data_Machine/R-Course-HTML-Notes/R-for-Data-Science-and-Machine-Learning/Training Exercises/Machine Learning Projects/CSV files for ML Projects")
+bank <- read.csv('bank_note_data.csv')
+```
+
+Check the head of the data frame and its structure.
+
+```{r}
+head(bank)
+```
+
+EDA
+Create whatever visualizations you are interested in. We'll skip this step for the solutions notebook/video because the data isn't easily interpretable since its just statistical info on images.
+Train Test Split
+Use the caTools library to split the data into training and testing sets.
+
+```{r}
+library(caTools)
+set.seed(101)
+sample <- sample.split(bank$Class, SplitRatio = 0.7)
+train <- subset(bank, sample == T)
+test <- subset(bank, sample==F)
+```
+
+Check the structure of the train data and note that Class is still an int data type. We won't convert it to a factor for now because the neural net requires all numeric information.
+
+```{r}
+str(train)
+```
+
+Building the Neural Net
+Call the neuralnet library
+
+```{r}
+library(neuralnet)
+```
+
+Browse through the documentation of neuralnet
+
+```{r}
+help("neuralnet")
+```
+
+Use the neuralnet function to train a neural net, set linear.output=FALSe and choose 10 hidden neurons (hidden=10)
+
+```{r}
+#hidden neurons number is tricky, we will do it as in last time
+nn <- neuralnet(Class ~ Image.Var + Image.Skew + Image.Curt + Entropy, data = train, linear.output = FALSE, hidden = c(5,3))
+
+
+#Predictions
+#Use compute() to grab predictions useing your nn model on the test set. Reference the lecture on how to do this.
+predicted.nn.values <- compute(nn, test[1:4])
+```
+
+
+```{r}
+head(predicted.nn.values$net.result)
+```
+
+```{r}
+predictions <- sapply( predicted.nn.values$net.result, round)
+head(predictions)
+```
+
+```{r}
+#to compare
+library(randomForest)
+library(caTools)
+set.seed(101)
+bank$Class <- factor(bank$Class)
+sample <- sample.split(bank$Class, SplitRatio = 0.7)
+train <- subset(bank, sample == T)
+test <- subset(bank, sample==F)
+
+rf.model <- randomForest(Class ~ ., data = train)
+
+rf.pred <- predict(rf.model, test)
+table(rf.pred, test$Class)
+#reality check. 
+```
+

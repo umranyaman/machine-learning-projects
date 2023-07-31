@@ -1,0 +1,111 @@
+---
+title: "K-nearest-neighbors project"
+author: "Umran YAMAN"
+date: "2023-07-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+setwd("~/Documents/Data_ML_projects/Data_Machine/R-Course-HTML-Notes/R-for-Data-Science-and-Machine-Learning/Training Exercises/Machine Learning Projects/CSV files for ML Projects")
+```
+
+KNN Project
+
+Since KNN is such a simple algorithm, we will just use this "Project" as a simple exercise to test your understanding of the implementation of KNN. By now you should feel comfortable implementing a machine learning algorithm in R, as long as you know what library to use for it.
+So for this project, just follow along with the bolded instructions. It should be very simple, so at the end you'll have an additional optional "bonus" project.
+Get the Data
+Iris Data Set
+We'll use the famous iris data set for this project. It's a small data set with flower features that can be used to attempt to predict the species of an iris flower.
+Use the ISLR libary to get the iris data set. Check the head of the iris Data Frame.
+
+```{r}
+library(ISLR)
+head(iris)
+str(iris)
+```
+
+```{r}
+summary(iris)
+```
+
+Standardize Data
+In this case, the iris data set has all its features in the same order of magnitude, but its good practice (especially with KNN) to standardize features in your data. Lets go ahead and do this even though its not necessary for this data!
+Use scale() to standardize the feature columns of the iris dataset. Set this standardized version of the data as a new variable.
+
+```{r}
+any(is.na(iris))
+```
+
+```{r}
+#For KNN classsifer, the scale of the variables matters
+
+var(iris[,1])
+var(iris[,2])
+
+#Clearly the scales are really different, we will standardise the variables
+```
+
+```{r}
+standardized.iris <- scale(iris[,-5])
+
+
+#Check that the scaling worked by checking the variance of one of the new columns.
+print(var(standardized.iris[,1]))
+print(var(standardized.iris[,2]))
+```
+
+Join the standardized data with the response/target/label column (the column with the species names.
+
+```{r}
+final.data <- cbind(standardized.iris, iris[5])
+
+#Train test split
+library(caTools)
+set.seed(101)
+sample <- sample.split(final.data$Species, SplitRatio = 0.7)
+train <- subset(final.data, sample==T)
+test <- subset(final.data, sample==F)
+
+#KNN
+
+library(class)
+#train, test, labels 
+predicted.species <- knn(train[1:4], test[1:4],train$Species, k=1 )
+print(predicted.species)
+```
+```{r}
+missclass.error <- mean(test$Species != predicted.species)
+print(missclass.error)
+```
+
+Choose a k value
+
+```{r}
+#Vectors:
+predicted.species <- NULL
+error.rate <- NULL
+
+for (i in 1:10){
+  set.seed(101)
+  #train, test, labels into knn function
+  predicted.species <- knn(train[1:4], test[1:4], train$Species, k=i)
+  #calculate errror rate : Actual species where they dont equal to the predicted
+  error.rate[i] <- mean(test$Species != predicted.species)
+}
+
+print(error.rate)
+
+library(ggplot2)
+#Make a data frame for the elbow plot
+k.values <- 1:10
+error.df <- data.frame(error.rate, k.values)
+print(error.df)
+
+#lty means line style
+ggplot(error.df, aes(k.values, error.rate)) + geom_point() + geom_line(lty='dotted', color= 'red', size=1.5)
+```
+

@@ -1,0 +1,173 @@
+---
+title: "Linear_Regression_Project"
+author: "Umran YAMAN"
+date: "2023-07-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Linear Regression Project
+
+# Get the Data
+
+You can download the data or just use the supplied csv in the repository. The data has the following features:
+datetime - hourly date + timestamp
+season - 1 = spring, 2 = summer, 3 = fall, 4 = winter
+holiday - whether the day is considered a holiday
+workingday - whether the day is neither a weekend nor holiday
+weather -
+1: Clear, Few clouds, Partly cloudy, Partly cloudy
+2: Mist + Cloudy, Mist + Broken clouds, Mist + Few clouds, Mist
+3: Light Snow, Light Rain + Thunderstorm + Scattered clouds, Light Rain + Scattered clouds
+4: Heavy Rain + Ice Pallets + Thunderstorm + Mist, Snow + Fog
+temp - temperature in Celsius
+atemp - "feels like" temperature in Celsius
+humidity - relative humidity
+windspeed - wind speed
+casual - number of non-registered user rentals initiated
+registered - number of registered user rentals initiated
+count - number of total rentals
+
+```{r}
+setwd("~/Documents/Data_ML_projects/Data_Machine/R-Course-HTML-Notes/R-for-Data-Science-and-Machine-Learning/Training Exercises/Machine Learning Projects/CSV files for ML Projects")
+df <- read.csv("bikeshare.csv")
+```
+
+```{r}
+head(df)
+```
+## Exploratory Data Analysis
+
+Create a scatter plot of count vs temp. Set a good alpha value.
+
+```{r}
+library(ggplot2)
+ggplot(df, aes(x=temp, y=count)) + geom_point(alpha=0.3, aes(color=temp)) +theme_bw()
+```
+
+Plot count versus datetime as a scatterplot with a color gradient based on temperature. You'll need to convert the datetime column into POSIXct before plotting.
+
+```{r}
+df$datetime = as.POSIXct(df$datetime)
+ggplot(df, aes(datetime, count)) + geom_point(aes(color = temp), alpha = 0.5) + scale_color_continuous(low='#55D8CE', high='#FF6E2E') +theme_bw()
+``` 
+Pros and cons right now of Linear Regression:
+
+Pros:
+Simple to explain
+Highly interpretable
+Model training and prediction are fast
+No tuning is required (excluding regularization)
+Features don't need scaling
+Can perform well with a small number of observations
+Well-understood
+
+Cons:
+Assumes a linear relationship between the features and the response
+Performance is (generally) not competitive with the best supervised learning methods due to high bias
+Can't automatically learn feature interactions
+
+
+What is the correlation between temp and count?
+```{r}
+cor.data = cor(df[, c('temp', 'count')])
+cor.data
+```
+
+```{r}
+ggplot(df, aes(factor(season), count)) + geom_boxplot(aes(color=factor(season))) +theme_bw()
+```
+
+The most favored season is 2 and 3. The bike rental counts are showing seasonality. 
+
+Notice what this says:
+A line can't capture a non-linear relationship.
+There are more rentals in winter than in spring
+
+We know of these issues because of the growth of rental count, this isn't due to the actual season!
+
+### Feature Engineering
+
+A lot of times you'll need to use domain knowledge and experience to engineer and create new features. Let's go ahead and engineer some new features from the datetime column.
+Create an "hour" column that takes the hour from the datetime column. You'll probably need to apply some function to the entire datetime column and reassign it. Hint:
+time.stamp <- bike$datetime[4]
+format(time.stamp, "%H")
+
+```{r}
+time.stamp <- df$datetime[4]
+format(time.stamp, "%H")
+
+
+df$hour = format(df$datetime, "%H")
+head(df)
+```
+
+Now create a scatterplot of count versus hour, with color scale based on temp. Only use bike data where workingday==1.
+Optional Additions:
+Use the additional layer: scale_color_gradientn(colors=c('color1',color2,etc..)) where the colors argument is a vector gradient of colors you choose, not just high and low.
+Use position=position_jitter(w=1, h=0) inside of geom_point() and check out what it does.
+
+```{r}
+df_subsetted = subset(df, workingday==1)
+
+#jitter fills out the data points
+
+ggplot(df_subsetted, aes(x=hour, y=count)) + geom_point(aes(color=temp),position=position_jitter(w=1, h=0)) + scale_color_gradientn(colors = c("dark blue", "blue", "lightblue", "lightgreen", "yellow", "orange", "red")) 
+
+df_subsetted_none = subset(df, workingday==0)
+ggplot(df_subsetted_none, aes(x=hour, y=count)) + geom_point(aes(color=temp),position=position_jitter(w=1, h=0)) + scale_color_gradientn(colors = c("dark blue", "blue", "lightblue", "lightgreen", "yellow", "orange", "red")) 
+```
+
+You should have noticed that working days have peak activity during the morning (~8am) and right after work gets out (~5pm), with some lunchtime activity. While the non-work days have a steady rise and fall for the afternoon
+Now let's continue by trying to build a model, we'll begin by just looking at a single feature.
+Building the Model
+Use lm() to build a model that predicts count based solely on the temp feature, name it temp.model
+
+```{r}
+#The data has the seasonality, the linear regression wont be that helpful, "time series" version of the data does not enable the random choosing. Thats why we are not splitting 
+
+temp.model = lm(count ~ temp, df)
+summary(temp.model)
+```
+How many bike rentals would we predict if the temperature was 25 degrees Celsius? Calculate this two ways:
+Using the values we just got above
+Using the predict() function
+You should get around 235.3 bikes.
+
+```{r}
+temp.predictions = predict(temp.model)
+```
+
+```{r}
+results <- cbind(temp.predictions, df$temp)
+colnames(results) <- c('predicted', 'actual')
+results <- as.data.frame(results)
+print(head(results))
+
+
+# How many bike rental counts at 25C?
+6.0462 + 9.17 * 25
+
+df$hour = sapply(df$hour, as.numeric)
+class(df$hour)
+```
+
+Finally build a model that attempts to predict count based off of the following features. Figure out if theres a way to not have to pass/write all these variables into the lm() function. Hint: StackOverflow or Google may be quicker than the documentation.
+
+season
+holiday
+workingday
+weather
+temp
+humidity
+windspeed
+hour (factor)
+
+```{r}
+all.model = lm(count ~ . -casual -registered -datetime -atemp, df)
+summary(all.model)
+```
+

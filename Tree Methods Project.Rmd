@@ -1,0 +1,156 @@
+---
+title: "Tree Methods Project"
+author: "Umran YAMAN"
+date: "2023-07-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Tree Methods Project
+For this project we will be exploring the use of tree methods to classify schools as Private or Public based off their features.
+Let's start by getting the data which is included in the ISLR library, the College data frame.
+A data frame with 777 observations on the following 18 variables.
+Private A factor with levels No and Yes indicating private or public university
+Apps Number of applications received
+Accept Number of applications accepted
+Enroll Number of new students enrolled
+Top10perc Pct. new students from top 10% of H.S. class
+Top25perc Pct. new students from top 25% of H.S. class
+F.Undergrad Number of fulltime undergraduates
+P.Undergrad Number of parttime undergraduates
+Outstate Out-of-state tuition
+Room.Board Room and board costs
+Books Estimated book costs
+Personal Estimated personal spending
+PhD Pct. of faculty with Ph.D.’s
+Terminal Pct. of faculty with terminal degree
+S.F.Ratio Student/faculty ratio
+perc.alumni Pct. alumni who donate
+Expend Instructional expenditure per student
+Grad.Rate Graduation rate
+
+```{r}
+library(ISLR)
+head(College)
+```
+
+Get the Data
+Call the ISLR library and check the head of College (a built-in data frame with ISLR, use data() to check this.) Then reassign College to a dataframe called df
+
+```{r}
+df <- College
+```
+
+
+EDA
+Let's explore the data!
+Create a scatterplot of Grad.Rate versus Room.Board, colored by the Private column.
+
+```{r}
+library(ggplot2)
+ggplot(df, aes(Room.Board, Grad.Rate)) + geom_point(aes(color = Private),alpha=0.5)
+#Create a histogram of full time undergrad students, color by Private.
+ggplot(df, aes(F.Undergrad)) + geom_histogram(aes(fill = Private), color='black', bins = 50, alpha=0.5) +theme_bw()
+```
+```{r}
+#Create a histogram of Grad.Rate colored by Private. You should see something odd here.
+ggplot(df, aes(Grad.Rate)) + geom_histogram(aes(fill = Private), color='black', bins =50, alpha=0.5) + theme_bw()
+```
+What college had a Graduation Rate of above 100% ?
+
+-Private college , Cazenovia College
+
+Change that college's grad rate to 100%
+
+```{r}
+subset(df, Grad.Rate >100)
+df["Cazenovia College", "Grad.Rate"] <- 100
+df["Cazenovia College", "Grad.Rate"]
+```
+Train Test Split
+Split your data into training and testing sets 70/30. Use the caTools library to do this.
+
+```{r}
+library(caTools)
+set.seed(101)
+sample <- sample.split(df$Private, SplitRatio = 0.7)
+train <- subset(df, sample==T)
+test <- subset(df, sample==F)
+```
+
+Decision Tree
+Use the rpart library to build a decision tree to predict whether or not a school is Private. Remember to only build your tree off the training data.
+
+```{r}
+library(rpart)
+#Train model
+tree <- rpart(Private ~ . , method='class', data= df)
+printcp(tree)
+```
+```{r}
+#Use predict() to predict the Private label on the test data.
+
+tree.pred <- predict(tree, test)
+head(tree.pred)
+#Probabilities of model yes or no about being private or not
+```
+```{r}
+#Change two columsn to one column
+tree.preds <- as.data.frame(tree.pred)
+
+joiner <- function(x){
+  if (x >= 0.5){
+    return('Yes')
+  }else{
+    return('No')
+  }
+}
+
+tree.preds$Private <- sapply(tree.preds$Yes, joiner)
+head(tree.preds)
+#We created a Private Column to see transform the probablilites to yes or no answer 
+```
+```{r}
+#Confusion matrix
+table(tree.preds$Private, test$Private)
+```
+
+```{r}
+#Plot the decision tree
+library(rpart.plot)
+prp(tree)
+```
+
+Random Forest
+Now let's build out a random forest model!
+Call the randomForest package library
+
+```{r}
+library(randomForest)
+#What was your model's confusion matrix on its own training set? Use model$confusion.
+
+model <- randomForest(Private ~ .,   data=train, importance=TRUE)
+print(model)
+model$confusion
+```
+
+
+Grab the feature importance with model$importance. Refer to the reading for more info on what Gini[1] means.[2]
+
+
+```{r}
+model$importance
+```
+
+Predictions
+Now use your random forest model to predict on your test set!
+
+```{r}
+model.pred <- predict(model, test)
+table(model.pred, test$Private)
+```
+It should have performed better than just a single tree, how much better depends on whether you are emasuring recall, precision, or accuracy as the most important measure of the model.

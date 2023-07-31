@@ -1,0 +1,333 @@
+---
+title: "Logistic-Regression-Project"
+author: "Umran YAMAN"
+date: "2023-07-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Logistic Regression Project
+
+In this project we will be working with the UCI adult dataset. We will be attempting to predict if people in the data set belong in a certain class by salary, either making <=50k or >50k per year.
+Typically most of your time is spent cleaning data, not running the few lines of code that build your model, this project will try to reflect that by showing different issues that may arise when cleaning data.
+
+### Get the Data
+
+Read in the adult_sal.csv file and set it to a data frame called adult.
+
+```{r}
+setwd("~/Documents/Data_ML_projects/Data_Machine/R-Course-HTML-Notes/R-for-Data-Science-and-Machine-Learning/Training Exercises/Machine Learning Projects/CSV files for ML Projects")
+
+adult <- read.csv('adult_sal.csv')
+```
+
+Check the head of adult
+
+```{r}
+head(adult)
+```
+
+You should notice the index has been repeated. Drop this column.
+
+```{r}
+library(dplyr)
+adult <- select(adult,-X)
+```
+Check the head,str, and summary of the data now.
+
+```{r}
+head(adult)
+str(adult)
+summary(adult)
+```
+
+### Data Cleaning
+
+Notice that we have a lot of columns that are cateogrical factors, however a lot of these columns have too many factors than may be necessary. In this data cleaning section we'll try to clean these columns up by reducing the number of factors.
+
+type_employer column
+
+Use table() to check out the frequency of the type_employer column.
+
+
+
+```{r}
+table(adult$type_employer)
+```
+
+How many Null values are there for type_employer? What are the two smallest groups?
+
+- 1836 of them are ? 
+
+Combine these two smallest groups into a single group called "Unemployed". There are lots of ways to do this, so feel free to get creative. Hint: It may be helpful to convert these objects into character data types (as.character() and then use sapply with a custom function)
+
+```{r}
+adult$type_employer = as.character(adult$type_employer)
+```
+
+### Data Cleaning
+
+```{r}
+#Combine employer type
+unemp <- function(job){
+  job <- as.character(job)
+  if (job=="Never-worked" | job=="Without-pay"){
+    return("Unemployed")
+  }else{
+    return(job)
+  }
+}
+
+adult$type_employer <- sapply(adult$type_employer, unemp)
+print(table(adult$type_employer))
+```
+
+What other columns are suitable for combining? Combine State and Local gov jobs into a category called SL-gov and combine self-employed jobs into a category called self-emp.
+
+
+```{r}
+comb <- function(job_name){
+  job_name <- as.character(job_name)
+  if (job_name == "Local-gov" | job_name == "State-gov"){
+    return("SL-gov")}
+      else if( job_name == "Self-emp-inc" | job_name == "Self-emp-not-inc" | job_name == "Private"){
+        return("self-emp")
+      }else {
+        return(job_name)
+      }
+}
+
+adult$type_employer <- sapply(adult$type_employer, comb)
+print(table(adult$type_employer))
+```
+
+
+Marital Column
+Use table() to look at the marital column
+
+```{r}
+table(adult$marital)
+```
+
+
+```{r}
+edit <- function(marital){
+  marital <- as.character(marital)
+  if (marital == "Divorced" | marital == "Widowed" | marital == "Separated"){
+    return("Not-Married")}
+      else if (marital == "Married-AF-spouse" | marital == "Married-civ-spouse" | marital == "Married-spouse-absent"){
+    return("Married")
+  }else {
+    return(marital)
+  }
+}
+
+adult$marital <- sapply(adult$marital, edit)
+
+print(table(adult$marital))
+```
+Reduce this to three groups:
+Married
+Not-Married
+Never-Married
+
+Country Column
+Check the country column using table()
+
+```{r}
+print(table(adult$country))
+```
+Group these countries together however you see fit. You have flexibility here because there is no right/wrong way to do this, possibly group by continents. You should be able to reduce the number of groups here significantly though.
+
+```{r}
+Asia <- c("China", "Hong", "India", "Iran", "Cambodia", "Japan", "Laos", "Phillipines", "Vietnam","Taiwan", "Thailand")
+
+North.America <- c("Canada", "United-States", "Puerto-Rico")
+
+Europe <- c("England", "France", "Germany", "Greece", "Holand-Netherlands", "Hungary", "Ireland", "Italy", "Poland", "Portugal", "Scotland", "Yugoslavia")
+
+Latin.and.South.America <- c('Columbia', 'Cuba', 'Dominician-Republic', 'Ecuador', "El-Salvador', Guatemala", "Haiti", "Honduras", 'Mexico', 'Nicaragua', 'Outlying-US(Guam-USVI-etc)', 'Jamaica)', 'Trinidad&Tobago')
+
+Other <- c('South')
+```
+
+```{r}
+group_country <- function(ctry){
+  if (ctry %in% Asia){
+    return('Asia')
+      }else if (ctry %in% North.America){
+        return('North.America')
+      }else if (ctry %in% Europe){
+        return('Europe')
+      }else if (ctry %in% Latin.and.South.America){
+        return('Latin.and.South.America')
+      }else{
+        return('Other')
+      }
+      }
+
+adult$country <- sapply(adult$country, group_country)
+
+
+print(table(adult$country))
+```
+
+```{r}
+#FACTOR
+
+adult$type_employer <- sapply(adult$type_employer, factor)
+adult$country <- sapply(adult$country, factor)
+adult$marital <- sapply(adult$marital, factor)
+```
+
+```{r}
+str(adult)
+```
+### Dealing with Missing Data
+
+
+Amelia
+Install and load the Amelia package.
+
+Convert any cell with a '?' or a ' ?' value to a NA value. Hint: is.na() may be useful here or you can also use brackets with a conditional statement. Refer to the solutions if you can't figure this step out.
+
+Convert any cell with a '?' or a ' ?' value to a NA value. Hint: is.na() may be useful here or you can also use brackets with a conditional statement. Refer to the solutions if you can't figure this step out.
+
+```{r}
+convert <- function(covariate){
+  covariate <- as.character{}
+}
+```
+
+```{r}
+library(Amelia)
+adult[adult=='?'] <- NA
+
+#FACTOR
+
+adult$type_employer <- sapply(adult$type_employer, factor)
+adult$country <- sapply(adult$country, factor)
+adult$marital <- sapply(adult$marital, factor)
+adult$income <- sapply(adult$income, factor)
+adult$occupation <- sapply(adult$occupation, factor)
+adult$relationship <- sapply(adult$relationship, factor)
+adult$race <- sapply(adult$race, factor)
+adult$sex <- sapply(adult$sex, factor)
+adult$education <- sapply(adult$education, factor)
+
+table(adult$type_employer)
+missmap(adult,  y.at = c(1), y.labels = c(''), main = 'Missing Map', col = c('yellow','black'), legend = FALSE)
+```
+```{r}
+#occupation is not a numeric value. This is not too much data, we will just drop them
+
+#Drop missing data.
+
+adult <- na.omit(adult)
+
+missmap(adult,  y.at = c(1), y.labels = c(''), main = 'Missing Map', col = c('yellow','black'), legend = FALSE)
+```
+```{r}
+#We cleaned the data, and dropped any NA values.
+
+#Now we will visualise the data
+library(ggplot2)
+library(dplyr)
+```
+
+
+```{r}
+ggplot(adult, aes(x = age)) + geom_histogram(aes(fill = income), color = 'black', bindwidth = 1) + theme_bw()
+
+#40 hr per week is common
+ggplot(adult, aes(hr_per_week)) + geom_histogram() + theme_bw()
+
+#Feature engineering idea: we can create groups about that
+
+head(adult)
+
+#new column name is region 
+adult <- rename(adult, region = country ) 
+
+head(adult)
+```
+
+```{r}
+pl <- ggplot(adult, aes(region)) + geom_bar(aes(fill=income), color = 'black') + theme_bw()
+
+```
+
+### Building a Model
+Now it's time to build a model to classify people into two groups: Above or Below 50k in Salary.
+
+### Logistic Regression
+
+Refer to the Lecture or ISLR if you are fuzzy on any of this.
+
+Logistic Regression is a type of classification model. In classification models, we attempt to predict the outcome of categorical dependent variables, using one or more independent variables. The independent variables can be either categorical or numerical.
+
+Logistic regression is based on the logistic function, which always takes values between 0 and 1. Replacing the dependent variable of the logistic function with a linear combination of dependent variables we intend to use for regression, we arrive at the formula for logistic regression.
+Take a quick look at the head() of adult to make sure we have a good overview before going into building the model!
+
+```{r}
+head(adult)
+str(adult)
+```
+
+### Train Test Split
+
+Split the data into a train and test set using the caTools library as done in previous lectures. Reference previous solutions notebooks if you need a refresher.
+
+```{r}
+library(caTools)
+set.seed(101)
+
+sample <- sample.split(adult$income, SplitRatio = 0.7)
+train <- subset(adult, sample==T)
+test <- subset(adult, sample==F)
+
+
+#help("glm")
+model <- glm(income ~ . , family = binomial(link='logit'), data = train)
+summary(model)
+#Error in eval(family$initialize) : y values must be 0 <= y <= 1
+
+
+```
+
+It would be good idea to go back to the dataset and lower the feature levels
+
+```{r}
+#Tries to removes to predictor values, tries combinations for the variable features, and keeps the one significant, probably we will get all these as important anyway
+new.step.model <- step(model)
+```
+```{r}
+summary(new.step.model)
+```
+
+Step function decided to keep all these. VIF variable inflation factor
+
+```{r}
+test$predicted.income <- predict(model, newdata = test, type = 'response')
+#Dont worry about the warning, the predictions might be misleading says and check out why we get this warnign
+
+
+#confusion matrix
+table(test$income, test$predicted.income >0.5 )
+
+
+#Accurarcy
+acc <- (6372 + 1420) / (6372 + 548 + 875 + 1420)
+
+#recall
+6732/(6372+548)
+
+#precision
+6732/(6372+875)
+```
+
+Some models maximising accuracy where some maximises the recall and precision. Overall straigtforward, train and test > glm 
+
